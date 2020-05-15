@@ -1,23 +1,20 @@
 import numpy as np
 from scipy.spatial import distance
-#from playsound import playsound
+
 import imutils
 from imutils import face_utils
-#from imutils.video import VideoStream
 import dlib
 import cv2
-from threading import Thread
+
+from playsound import playsound
+
 import os
-import pygame
-#pygame.init()
-#pygame.mixer.music.load('C:\\Users\\msi1\\Desktop\\MajorProject\\1-SleepinessDetection\\v02-Final\\alarm.wav')
-#pygame.mixer.music.play()
-#time.sleep(2)
-#pygame.mixer.music.stop()
-	#playsound.playsound('C:\\Users\\msi1\\Desktop\\qMajorProject\\1-SleepinessDetection\\v02-Final\\audio\\Alarm01.wav')
-	#alarm = Thread(target=playsound, args=('C:\\Users\\msi1\\Desktop\\MajorProject\\1-SleepinessDetection\\v02-Final\\audio\\Alarm01.wav',))
-	#alarm.start()
-	
+#import subprocess
+from subprocess import Popen
+
+def play_audio(path):
+	playsound(path)
+		
 def eye_aspect_ratio(eye):
 	#Euclidean dist b/w the set of two set of vertical eyes landmark
 	A = distance.euclidean(eye[1], eye[5])
@@ -29,28 +26,25 @@ def eye_aspect_ratio(eye):
 	# return aspact ratio
 	return ear
 
-import argparse
-ap = argparse.ArgumentParser()
-ap.add_argument("-a", "--alarm", type=str, default="",
-	help="path alarm .WAV file")
-args = vars(ap.parse_args())
-#ALARM_ON = False
-
 thresh = 0.25
 frame_check = 20
 detect = dlib.get_frontal_face_detector()
-predict = dlib.shape_predictor("C:/Users/msi1/Desktop/MajorProject/1-SleepinessDetection/v02-Final/DataPrepration/shape_predictor_68_face_landmarks.dat") #Dat file is the crux of the code
+predict = dlib.shape_predictor("C:/Users/msi1/Desktop/MajorProject/1-SleepinessDetection/v02-Final/DataPrepration/shape_predictor_68_face_landmarks.dat")
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 cap=cv2.VideoCapture(0)
 flag=0
+#ALARM_ON = False
+count = 0
 while True:
 	# grab screen, resix
 	ret, frame=cap.read()
-	#frame = imutils.resize(frame, width=600)
-	frame = imutils.resize(frame, width=450)
+	
+	frame = imutils.resize(frame, width=550)
+	
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
 	subjects = detect(gray, 0)
 	for subject in subjects:
 		shape = predict(gray, subject)
@@ -64,29 +58,32 @@ while True:
 		rightEyeHull = cv2.convexHull(rightEye)
 		cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
 		cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+		
+		cv2.putText(frame, "Visuals: {:.2f}".format(ear), (0,30),cv2.FONT_HERSHEY_SIMPLEX,0.7, (255,0,0),2)
+		
 		if ear < thresh:
 			flag += 1
-			print (flag)
-			#import subprocess
+			#print (flag)
+			cv2.putText(frame, "B L I N K",(430,20),cv2.FONT_HERSHEY_SIMPLEX,0.7, (100,155,0),2)
+			
 			if flag >= frame_check:
-				os.system('python drive.py model.h5')
-				#if not ALARM_ON:
-				#	ALARM_ON = True
-				#	if args["alarm"] != "":
-				#		t = Thread(target=sound_alarm, args=(args["alarm"],))
-				#		t.deamon = True
-				#		t.start()
-				cv2.putText(frame, "*********  WAKE UP SIR  *************", (10, 30),
-					cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-				cv2.putText(frame, "*********  ALERT!  *************", (10,325),
+				cv2.putText(frame, "********* WAKE UP SIR ********", (10, 70),
+					cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+					# image, "TEXT", (x,y), fontFamily-eg. SIMPLEX / PLAIN, frontScale, (B,G,R), thickness
+				cv2.putText(frame, "*** SLEEPINESS DETECTED ***", (10,355),
 					cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 				
-				#print ("Drowsy")
-				#subprocess.call(['python', 'C:\\Users\\msi1\\Desktop\\MajorProject\\1-SleepinessDetection\\v02-Final\\drive.py'])
-				#subprocess.call(['python', 'C:\\Users\\msi1\\Desktop\\MajorProject\\1-SleepinessDetection\\v02-Final\\model.h5'])
+				play_audio('C:\\Users\\msi1\\Desktop\\MajorProject\\1-SleepinessDetection\\v02-Final\\alarm.wav')
+				count = count + 1
+				print(count)
+				while(count >= 2):
+					Popen('python drive.py model.h5')
+					break
+					
 		else:
 			flag = 0
-	cv2.imshow("Sleepiness Detection System - Online", frame)
+			count = 0
+	cv2.imshow("Sleepiness Detection System - ACTIVE", frame)
 	# 0xFF is used to mask off the last 8-bit of Sequence and the ord() of any keyboard character will not be greater than 255
 	key = cv2.waitKey(1) & 0xFF
 	# ord() return ASCII value of q (DEC, HEX and OCT - 113,71 and 161 respectively)
