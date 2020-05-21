@@ -6,13 +6,11 @@ from imutils import face_utils
 import dlib
 import cv2
 
-from playsound import playsound
+from playsound import playsound 
 
-import os
-#import subprocess
 from subprocess import Popen
 
-def play_audio(path):
+def play_alarm(path):
 	playsound(path)
 		
 def eye_aspect_ratio(eye):
@@ -34,11 +32,11 @@ predict = dlib.shape_predictor("C:/Users/msi1/Desktop/MajorProject/1-SleepinessD
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 cap=cv2.VideoCapture(0)
+
 flag=0
-#ALARM_ON = False
-count = 0
+#buzzerCount = 0
+
 while True:
-	# grab screen, resix
 	ret, frame=cap.read()
 	
 	frame = imutils.resize(frame, width=550)
@@ -48,7 +46,7 @@ while True:
 	subjects = detect(gray, 0)
 	for subject in subjects:
 		shape = predict(gray, subject)
-		shape = face_utils.shape_to_np(shape)#converting to NumPy Array
+		shape = face_utils.shape_to_np(shape)
 		leftEye = shape[lStart:lEnd]
 		rightEye = shape[rStart:rEnd]
 		leftEAR = eye_aspect_ratio(leftEye)
@@ -73,16 +71,18 @@ while True:
 				cv2.putText(frame, "*** SLEEPINESS DETECTED ***", (10,355),
 					cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 				
-				play_audio('C:\\Users\\msi1\\Desktop\\MajorProject\\1-SleepinessDetection\\v02-Final\\alarm.wav')
-				count = count + 1
-				print(count)
-				while(count >= 2):
+				play_alarm('C:\\Users\\msi1\\Desktop\\MajorProject\\1-SleepinessDetection\\v02-Final\\alarm.wav')
+				buzzerCount = buzzerCount + 1
+				print(buzzerCount)
+				#while(flag >= 2):
+				while(buzzerCount >= 2):
 					Popen('python drive.py model.h5')
 					break
+
 					
 		else:
 			flag = 0
-			count = 0
+			buzzerCount = 0
 	cv2.imshow("Sleepiness Detection System - ACTIVE", frame)
 	# 0xFF is used to mask off the last 8-bit of Sequence and the ord() of any keyboard character will not be greater than 255
 	key = cv2.waitKey(1) & 0xFF
